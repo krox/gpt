@@ -16,6 +16,8 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+#pragma once
+
 template<typename vtype>
 void cgpt_ferm_to_prop(Lattice<iSpinColourVector<vtype>>& ferm, cgpt_Lattice_base* _prop, int s, int c, bool f2p) {
   Lattice<iSpinColourMatrix<vtype>> & prop = compatible<iSpinColourMatrix<vtype>>(_prop)->l;
@@ -45,4 +47,24 @@ void cgpt_ferm_to_prop(Lattice<iSpinColourVector<vtype>>& ferm, cgpt_Lattice_bas
 template<typename T>
 void cgpt_ferm_to_prop(Lattice<T>& ferm, cgpt_Lattice_base* _prop, int s, int c, bool f2p) {
   ERR("not supported");
+}
+
+template<typename vtype>
+void cgpt_project_on_group(Lattice<iColourMatrix<vtype>>& dst, Lattice<iColourMatrix<vtype>>& src) {
+  dst = ProjectOnGroup(src);
+}
+
+template<typename T>
+void cgpt_project_on_group(Lattice<T>&, Lattice<T>&) {
+  ERR("project_on_group not supported for this lattice type");
+}
+
+template<typename vtype>
+void cgpt_project_on_algebra(Lattice<iColourMatrix<vtype>>& dst, Lattice<iColourMatrix<vtype>>& src) {
+  dst = Ta(src);
+}
+
+template<typename T>
+void cgpt_project_on_algebra(Lattice<T>&, Lattice<T>&) {
+  ERR("project_on_algebra not supported for this lattice type");
 }
