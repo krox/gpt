@@ -19,6 +19,7 @@
 import gpt as g
 import numpy as np
 
+# average plaquette, normalized to plaquette(unit config) = 1
 def plaquette(U):
     # U[mu](x)*U[nu](x+mu)*adj(U[mu](x+nu))*adj(U[nu](x))
     tr=0.0
@@ -27,6 +28,15 @@ def plaquette(U):
         for nu in range(mu):
             tr += g.sum( g.trace(U[mu] * g.cshift( U[nu], mu, 1) * g.adj( g.cshift( U[mu], nu, 1 ) ) * g.adj( U[nu] )) )
     return 2.*tr.real/vol/4./3./3.
+
+# set S to sum of 6 staples. written in a way such that
+# plaquette(U) = const * sum_mu Real ( Trace( U[mu] * staple(U, mu) ) )
+def staple(S, U, mu):
+    S[:] = 0.0
+    for nu in range(4):
+        if nu==mu: continue
+        S += g.cshift(U[nu], mu, 1) * g.adj(g.cshift(U[mu], nu, 1)) * g.adj(U[nu])
+        S += g.cshift( g.adj(g.cshift(U[nu], mu, 1)) * g.adj(U[mu]) * U[nu] ,nu,-1)
 
 def unit(first):
     if type(first) == g.grid:
