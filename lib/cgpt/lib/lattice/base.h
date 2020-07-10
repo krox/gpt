@@ -21,22 +21,24 @@ class cgpt_Lattice_base {
 public:
   virtual ~cgpt_Lattice_base() { };
   virtual cgpt_Lattice_base* create_lattice_of_same_type() = 0;
-  virtual void set_val(const std::vector<int>& coor, PyObject* val) = 0;
-  virtual PyObject* get_val(const std::vector<int>& coor) = 0;
+  virtual void set_to_zero() = 0;
   virtual PyObject* to_str() = 0;
   virtual PyObject* sum() = 0;
   virtual RealD norm2() = 0;
   virtual RealD axpy_norm2(ComplexD a, cgpt_Lattice_base* x, cgpt_Lattice_base* y) = 0;
+  virtual void axpy(ComplexD a, cgpt_Lattice_base* x, cgpt_Lattice_base* y) = 0;
   virtual ComplexD innerProduct(cgpt_Lattice_base* other) = 0;
   virtual ComplexD rankInnerProduct(cgpt_Lattice_base* other) = 0;
   virtual void innerProductNorm2(ComplexD& ip, RealD& a2, cgpt_Lattice_base* other) = 0;
   virtual void copy_from(cgpt_Lattice_base* src) = 0;
+  virtual void fft_from(cgpt_Lattice_base* src, const std::vector<int> & dims, int sign) = 0;
   virtual cgpt_Lattice_base* mul(cgpt_Lattice_base* dst, bool ac, cgpt_Lattice_base* b, int unary_a, int unary_b, int unary_expr) = 0; // unary_expr(unary_a(this) * unary_b(b))
   virtual cgpt_Lattice_base* matmul(cgpt_Lattice_base* dst, bool ac, PyArrayObject* b, std::string& bot, int unary_b, int unary_a, int unary_expr, bool reverse) = 0;
   virtual cgpt_Lattice_base* gammamul(cgpt_Lattice_base* dst, bool ac, Gamma::Algebra gamma, int unary_a, int unary_expr, bool reverse) = 0;
   virtual void cshift_from(cgpt_Lattice_base* src, int dir, int off) = 0;
   virtual cgpt_Lattice_base* compatible_linear_combination(cgpt_Lattice_base* dst, bool ac, std::vector<cgpt_lattice_term>& f, int unary_factor, int unary_expr) = 0;
   virtual std::string type() = 0;
+  virtual int singlet_rank() = 0;
   virtual PyObject* to_decl() = 0;
   virtual void convert_from(cgpt_Lattice_base* src) = 0;
   virtual PyObject* slice(int dim) = 0;
@@ -48,7 +50,7 @@ public:
   virtual void change_checkerboard(int cb) = 0;
   virtual int get_checkerboard() = 0;
   virtual void basis_rotate(std::vector<cgpt_Lattice_base*> &basis,RealD* Qt,int j0, int j1, int k0,int k1,int Nm) = 0;
-  virtual void linear_combination(std::vector<cgpt_Lattice_base*> &basis,RealD* Qt) = 0;
+  virtual void linear_combination(std::vector<cgpt_Lattice_base*> &basis,ComplexD* Qt) = 0;
   virtual PyObject* memory_view() = 0; // access to internal memory storage, can be simd format
   virtual PyObject* memory_view_coordinates() = 0;
   virtual void describe_data_layout(long & Nsimd, long & word, long & simd_word, std::vector<long> & ishape) = 0;

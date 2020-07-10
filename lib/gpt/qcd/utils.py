@@ -19,13 +19,14 @@
 import cgpt
 import gpt
 
+
 def ferm_to_prop(p, f, s, c):
-    assert(len(f.v_obj) == 1 and len(p.v_obj) == 1)
-    return cgpt.util_ferm2prop(f.v_obj[0],p.v_obj[0],s,c,True)
+    assert len(f.v_obj) == 1 and len(p.v_obj) == 1
+    return cgpt.util_ferm2prop(f.v_obj[0], p.v_obj[0], s, c, True)
 
 def prop_to_ferm(f, p, s, c):
-    assert(len(f.v_obj) == 1 and len(p.v_obj) == 1)
-    return cgpt.util_ferm2prop(f.v_obj[0],p.v_obj[0],s,c,False)
+    assert len(f.v_obj) == 1 and len(p.v_obj) == 1
+    return cgpt.util_ferm2prop(f.v_obj[0], p.v_obj[0], s, c, False)
 
 def project_on_group(dst, src=None):
     if src is None:

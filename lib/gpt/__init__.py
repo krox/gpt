@@ -25,12 +25,15 @@ import gpt.qcd
 import socket
 import cgpt, sys
 
+"""
+GPT -- Grit Python Toolkit
+"""
+
 # initialize cgpt when gpt is loaded
 cgpt.init(sys.argv)
 
 # save my hostname
-hostname=socket.gethostname()
+hostname = socket.gethostname()
 
 # synonyms
-eval=expr_eval
-
+eval = expr_eval
