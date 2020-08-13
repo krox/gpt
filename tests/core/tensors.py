@@ -10,6 +10,23 @@ import numpy as np
 grid = g.grid([8, 8, 8, 8], g.single)
 rng = g.random("test")
 
+# outer product and inner product of tensors
+lhs = g.vcolor([rng.cnormal() for i in range(3)])
+rhs = g.vcolor([rng.cnormal() for i in range(3)])
+
+outer = lhs * g.adj(rhs)
+inner = g.adj(lhs) * rhs
+inner_comp = 0.0
+for i in range(3):
+    inner_comp += lhs.array.conjugate()[i] * rhs.array[i]
+    for j in range(3):
+        assert abs(outer.array[i, j] - lhs.array[i] * rhs.array.conjugate()[j]) < 1e-14
+assert abs(inner_comp - inner) < 1e-14
+
+# TODO: the following is already implemented for vcomplex but should
+# be implemented for all vectors
+# cwise = lhs * rhs
+
 # demonstrate slicing of internal indices
 vc = g.vcomplex(grid, 30)
 vc[0, 0, 0, 0, 0] = 1
@@ -49,7 +66,22 @@ assert g.norm2(mc[0, 0, 0, 0] - mc_comp) < 1e-10
 
 vc2 = g.eval(mc * vc)
 vc2_comp = mc_comp * vc_comp
+vc3 = g.eval(mc_comp * vc)
 assert g.norm2(vc2[0, 0, 0, 0] - vc2_comp) < 1e-10
+eps2 = g.norm2(vc2 - vc3) / g.norm2(vc2)
+assert eps2 < 1e-10
+
+# test transpose and adjoint of mcomplex
+mc_adj = g.eval(g.adj(mc))
+mc_transpose = g.eval(g.transpose(mc))
+mc_array = mc[0, 0, 0, 0].array
+mc_adj_array = mc_adj[0, 0, 0, 0].array
+mc_transpose_array = mc_transpose[0, 0, 0, 0].array
+assert np.linalg.norm(mc_adj_array - mc_array.transpose().conjugate()) < 1e-13
+assert np.linalg.norm(mc_transpose_array - mc_array.transpose()) < 1e-13
+assert g.norm2(g.adj(mc[0, 0, 0, 0]) - mc_adj[0, 0, 0, 0]) < 1e-25
+assert g.norm2(g.transpose(mc[0, 0, 0, 0]) - mc_transpose[0, 0, 0, 0]) < 1e-25
+
 
 # assign entire lattice
 cm = g.mcolor(grid)
@@ -122,12 +154,12 @@ for i in range(4):
         assert eps < 1e-13
 
 # gamma matrices applied to spin
-sc = g.vspincolor(grid)
-sc[:] = 0
-sc[0, 0, 0, 0] = g.vspincolor([[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]])
-scA = g.eval(g.gamma[0] * g.gamma[1] * sc)
-scB = g.eval(g.gamma[0] * g.eval(g.gamma[1] * sc))
-assert g.norm2(scA - scB) < 1e-13
+vsc = g.vspincolor(grid)
+vsc[:] = 0
+vsc[0, 0, 0, 0] = g.vspincolor([[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]])
+vscA = g.eval(g.gamma[0] * g.gamma[1] * vsc)
+vscB = g.eval(g.gamma[0] * g.eval(g.gamma[1] * vsc))
+assert g.norm2(vscA - vscB) < 1e-13
 
 # set entire block to tensor
 src = g.vspincolor(grid)
@@ -155,3 +187,11 @@ assert eps0 < 1e-9 and eps1 < 1e-9
 
 # create singlet by number
 assert g.complex(0.5).array[0] == 0.5
+
+# left and right multiplication of different data types with scalar
+mc = g.mcomplex(grid, ntest)
+for dti in [cv, cm, vsc, msc, vc, mc]:
+    rng.cnormal(dti)
+    eps = g.norm2(mask * dti - dti * mask)
+    g.message(f"Done with {dti.otype.__name__}")
+    assert eps == 0.0

@@ -50,6 +50,7 @@ public:
   virtual void change_checkerboard(int cb) = 0;
   virtual int get_checkerboard() = 0;
   virtual void basis_rotate(std::vector<cgpt_Lattice_base*> &basis,RealD* Qt,int j0, int j1, int k0,int k1,int Nm) = 0;
+  virtual void basis_rotate(std::vector<cgpt_Lattice_base*> &basis,ComplexD* Qt,int j0, int j1, int k0,int k1,int Nm) = 0;
   virtual void linear_combination(std::vector<cgpt_Lattice_base*> &basis,ComplexD* Qt) = 0;
   virtual PyObject* memory_view() = 0; // access to internal memory storage, can be simd format
   virtual PyObject* memory_view_coordinates() = 0;
@@ -57,7 +58,7 @@ public:
   virtual int get_numpy_dtype() = 0;
   virtual void block_project(cgpt_Lattice_base* coarse, std::vector<cgpt_Lattice_base*>& basis) = 0;
   virtual void block_promote(cgpt_Lattice_base* coarse, std::vector<cgpt_Lattice_base*>& basis) = 0;
-  virtual void block_orthonormalize(cgpt_Lattice_base* coarse, std::vector<cgpt_Lattice_base*>& basis) = 0;
+  virtual void block_orthonormalize(cgpt_Lattice_base* coarse, std::vector<std::vector<cgpt_Lattice_base*>>& vbasis) = 0;
   virtual GridBase* get_grid() = 0;
   virtual PyObject* advise(std::string type) = 0;
   virtual PyObject* prefetch(std::string type) = 0;

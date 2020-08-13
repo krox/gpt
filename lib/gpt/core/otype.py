@@ -1,6 +1,7 @@
 #
 #    GPT - Grid Python Toolkit
 #    Copyright (C) 2020  Christoph Lehner (christoph.lehner@ur.de, https://github.com/lehner/gpt)
+#                  2020 Tilo Wettig
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -99,6 +100,9 @@ class ot_matrix_color(ot_base):
             "ot_vector_color(%d)" % ndim: (lambda: ot_vector_color(ndim), (1, 0)),
             "ot_singlet": (lambda: self, None),
         }
+        self.rmtab = {
+            "ot_singlet": (lambda: self, None),
+        }
 
 
 def matrix_color(grid, ndim):
@@ -142,19 +146,26 @@ class ot_matrix_su3_fundamental(ot_matrix_color):
             "ot_vector_color(3)": (lambda: ot_vector_color(3), (1, 0)),
             "ot_singlet": (lambda: self, None),
         }
+        self.rmtab = {
+            "ot_singlet": (lambda: self, None),
+        }
 
     def generators(self, dt):
+        # Generators always need to satisfy normalization Tr(T_a T_b) = 1/2 delta_{ab}
         return [
-            numpy.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]], dtype=dt) / 2.0,
-            numpy.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]], dtype=dt) / 2.0,
-            numpy.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]], dtype=dt) / 2.0,
-            numpy.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]], dtype=dt) / 2.0,
-            numpy.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]], dtype=dt) / 2.0,
-            numpy.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]], dtype=dt) / 2.0,
-            numpy.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]], dtype=dt) / 2.0,
-            numpy.array([[1, 0, 0], [0, 1, 0], [0, 0, -2]], dtype=dt)
-            / (3.0) ** 0.5
-            / 2.0,
+            matrix_su3_fundamental(i)
+            for i in [
+                numpy.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]], dtype=dt) / 2.0,
+                numpy.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]], dtype=dt) / 2.0,
+                numpy.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]], dtype=dt) / 2.0,
+                numpy.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]], dtype=dt) / 2.0,
+                numpy.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]], dtype=dt) / 2.0,
+                numpy.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]], dtype=dt) / 2.0,
+                numpy.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]], dtype=dt) / 2.0,
+                numpy.array([[1, 0, 0], [0, 1, 0], [0, 0, -2]], dtype=dt)
+                / (3.0) ** 0.5
+                / 2.0,
+            ]
         ]
 
 
@@ -173,13 +184,20 @@ class ot_matrix_su2_fundamental(ot_matrix_color):
             "ot_vector_color(2)": (lambda: ot_vector_color(2), (1, 0)),
             "ot_singlet": (lambda: self, None),
         }
+        self.rmtab = {
+            "ot_singlet": (lambda: self, None),
+        }
 
     def generators(self, dt):
         # The generators are normalized such that T_a^2 = Id/2Nc + d_{aab}T_b/2
+        # Generators always need to satisfy normalization Tr(T_a T_b) = 1/2 delta_{ab}
         return [
-            numpy.array([[0, 1], [1, 0]], dtype=dt) / 2.0,
-            numpy.array([[0, -1j], [1j, 0]], dtype=dt) / 2.0,
-            numpy.array([[1, 0], [0, -1]], dtype=dt) / 2.0,
+            matrix_su2_fundamental(i)
+            for i in [
+                numpy.array([[0, 1], [1, 0]], dtype=dt) / 2.0,
+                numpy.array([[0, -1j], [1j, 0]], dtype=dt) / 2.0,
+                numpy.array([[1, 0], [0, -1]], dtype=dt) / 2.0,
+            ]
         ]
 
 
@@ -198,13 +216,20 @@ class ot_matrix_su2_adjoint(ot_matrix_color):
             "ot_vector_color(3)": (lambda: ot_vector_color(3), (1, 0)),
             "ot_singlet": (lambda: self, None),
         }
+        self.rmtab = {
+            "ot_singlet": (lambda: self, None),
+        }
 
     def generators(self, dt):
-        # (T_i)_{kj} = c^k_{ij} with c^k_{ij} = i \epsilon_{ijk}
+        # (T_i)_{kj} = c^k_{ij} with c^k_{ij} = i \epsilon_{ijk} / 2
+        # Generators always need to satisfy normalization Tr(T_a T_b) = 1/2 delta_{ab}
         return [
-            numpy.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]], dtype=dt),
-            numpy.array([[0, 0, 1j], [0, 0, 0], [-1j, 0, 0]], dtype=dt),
-            numpy.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]], dtype=dt),
+            matrix_su2_adjoint(i)
+            for i in [
+                numpy.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]], dtype=dt) / 2.0,
+                numpy.array([[0, 0, 1j], [0, 0, 0], [-1j, 0, 0]], dtype=dt) / 2.0,
+                numpy.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]], dtype=dt) / 2.0,
+            ]
         ]
 
 
@@ -226,6 +251,9 @@ class ot_matrix_spin(ot_base):
         self.mtab = {
             self.__name__: (lambda: self, (1, 0)),
             "ot_vector_spin(%d)" % ndim: (lambda: ot_vector_spin(ndim), (1, 0)),
+            "ot_singlet": (lambda: self, None),
+        }
+        self.rmtab = {
             "ot_singlet": (lambda: self, None),
         }
 
@@ -274,12 +302,14 @@ class ot_matrix_spin_color(ot_base):
                 lambda: ot_vector_spin(spin_ndim, color_ndim),
                 ([1, 3], [0, 1]),
             ),
+            "ot_singlet": (lambda: self, None),
         }
         self.rmtab = {
             "ot_matrix_spin(%d)"
             % (spin_ndim): (lambda: self, None),  # TODO: add proper indices
             "ot_matrix_color(%d)"
             % (color_ndim): (lambda: self, None),  # TODO: add proper indices
+            "ot_singlet": (lambda: self, None),
         }
 
 
@@ -307,24 +337,37 @@ class ot_vector_spin_color(ot_base):
         self.itab = {
             self.__name__: (lambda: ot_singlet, ([0, 1], [0, 1])),
         }
+        self.mtab = {
+            "ot_singlet": (lambda: self, None),
+        }
         self.rmtab = {
             "ot_matrix_spin(%d)"
             % (spin_ndim): (lambda: self, None),  # TODO: add proper indices
             "ot_matrix_color(%d)"
             % (color_ndim): (lambda: self, None),  # TODO: add proper indices
+            "ot_singlet": (lambda: self, None),
         }
 
     def distribute(self, mat, dst, src, zero_lhs):
-        if src.otype.__name__ == self.ot_matrix:
-            grid = src.grid
-            dst_sc, src_sc = gpt_object(grid, self), gpt_object(grid, self)
-            for s in range(self.spin_ndim):
-                for c in range(self.color_ndim):
-                    gpt.qcd.prop_to_ferm(src_sc, src, s, c)
-                    if zero_lhs:
-                        dst_sc[:] = 0
-                    mat(dst_sc, src_sc)
-                    gpt.qcd.ferm_to_prop(dst, dst_sc, s, c)
+        src, dst = gpt.util.to_list(src), gpt.util.to_list(dst)
+        if src[0].otype.__name__ == self.ot_matrix:
+            grid = src[0].grid
+            n = self.spin_ndim * self.color_ndim * len(src)
+            dst_sc = [gpt_object(grid, self) for i in range(n)]
+            src_sc = [gpt_object(grid, self) for i in range(n)]
+            for i in range(len(src)):
+                for s in range(self.spin_ndim):
+                    for c in range(self.color_ndim):
+                        idx = c + self.color_ndim * (s + self.spin_ndim * i)
+                        gpt.qcd.prop_to_ferm(src_sc[idx], src[i], s, c)
+                        if zero_lhs:
+                            dst_sc[idx][:] = 0
+            mat(dst_sc, src_sc)
+            for i in range(len(src)):
+                for s in range(self.spin_ndim):
+                    for c in range(self.color_ndim):
+                        idx = c + self.color_ndim * (s + self.spin_ndim * i)
+                        gpt.qcd.ferm_to_prop(dst[i], dst_sc[idx], s, c)
         else:
             assert 0
 
@@ -341,12 +384,6 @@ class ot_vsinglet4(ot_base):
     v_otype = ["ot_vsinglet4"]
 
 
-class ot_vsinglet5(ot_base):
-    nfloats = 2 * 5
-    shape = (5,)
-    v_otype = ["ot_vsinglet5"]
-
-
 class ot_vsinglet10(ot_base):
     nfloats = 2 * 10
     shape = (10,)
@@ -356,7 +393,6 @@ class ot_vsinglet10(ot_base):
 class ot_vsinglet(ot_base):
     fundamental = {
         4: ot_vsinglet4,
-        5: ot_vsinglet5,
         10: ot_vsinglet10,
     }
 
@@ -390,12 +426,6 @@ class ot_msinglet4(ot_base):
     v_otype = ["ot_msinglet4"]
 
 
-class ot_msinglet5(ot_base):
-    nfloats = 2 * 5 * 5
-    shape = (5, 5)
-    v_otype = ["ot_msinglet5"]
-
-
 class ot_msinglet10(ot_base):
     nfloats = 2 * 10 * 10
     shape = (10, 10)
@@ -405,7 +435,6 @@ class ot_msinglet10(ot_base):
 class ot_msinglet(ot_base):
     fundamental = {
         4: ot_msinglet4,
-        5: ot_msinglet5,
         10: ot_msinglet10,
     }
 
@@ -413,7 +442,7 @@ class ot_msinglet(ot_base):
         self.__name__ = "ot_msinglet(%d)" % n
         self.nfloats = 2 * n * n
         self.shape = (n, n)
-        self.transposed = None
+        self.transposed = (1, 0)
         self.spintrace = None
         self.colortrace = None
         self.vector_type = ot_vsinglet(n)
@@ -466,11 +495,11 @@ def str_to_otype(s):
             "ot_matrix_su3_fundamental",
             "ot_matrix_su2_fundamental",
             "ot_matrix_su2_adjoint",
+            "ot_vsinglet",
             "ot_vsinglet4",
-            "ot_vsinglet5",
             "ot_vsinglet10",
+            "ot_msinglet",
             "ot_msinglet4",
-            "ot_msinglet5",
             "ot_msinglet10",
         ]
     )

@@ -68,3 +68,12 @@ template<typename T>
 void cgpt_project_on_algebra(Lattice<T>&, Lattice<T>&) {
   ERR("project_on_algebra not supported for this lattice type");
 }
+
+static long cgpt_gcd(long a, long b) {
+  while (b) {
+    long t = b;
+    b = a % b;
+    a = t;
+  }
+  return a;
+}

@@ -17,9 +17,10 @@
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import gpt, cgpt
+from gpt.params import params_convention
 
 
-class operator:
+class operator(gpt.matrix_operator):
     def __init__(self, name, U, params, Ls=None, otype=None):
 
         # keep constructor parameters
@@ -27,7 +28,6 @@ class operator:
         self.U = U
         self.params_constructor = params
         self.Ls = Ls
-        self.otype = otype
 
         # derived objects
         self.U_grid = U[0].grid
@@ -76,7 +76,7 @@ class operator:
         gpt.qcd.fermion.register(registry, self)
 
         # map Grid matrix operations to clean matrix_operator structure
-        self.M = gpt.matrix_operator(
+        super().__init__(
             mat=registry.M, adj_mat=registry.Mdag, otype=otype, grid=self.F_grid
         )
         self.Meooe = gpt.matrix_operator(
@@ -127,23 +127,58 @@ class operator:
     def __del__(self):
         cgpt.delete_fermion_operator(self.obj)
 
-    def converted(self, dst_precision):
-        if dst_precision == self.U[0].grid.precision:
-            return self
+    def updated(self, U):
         return operator(
             name=self.name,
-            U=gpt.convert(self.U, dst_precision),
+            U=U,
             params=self.params_constructor,
             Ls=self.Ls,
-            otype=self.otype,
+            otype=self.otype[0],
         )
 
-    def unary(self, opcode, o, i):
+    def converted(self, dst_precision):
+        return self.updated(gpt.convert(self.U, dst_precision))
+
+    def split(self, mpi_split):
+        split_grid = self.U_grid.split(mpi_split, self.U_grid.fdimensions)
+        U_split = [gpt.lattice(split_grid, x.otype) for x in self.U]
+        pos_split = gpt.coordinates(U_split[0])
+        for i, x in enumerate(U_split):
+            x[pos_split] = self.U[i][pos_split]
+        return self.updated(U_split)
+
+    @params_convention()
+    def modified(self, params):
+        return operator(
+            name=self.name,
+            U=self.U,
+            params={**self.params_constructor, **params},
+            Ls=self.Ls,
+            otype=self.otype[0],
+        )
+
+    def apply_unary_operator(self, opcode, o, i):
         assert len(i.v_obj) == 1
         assert len(o.v_obj) == 1
         # Grid has different calling conventions which we adopt in cgpt:
         return cgpt.apply_fermion_operator(self.obj, opcode, i.v_obj[0], o.v_obj[0])
 
     def _G5M(self, dst, src):
-        self.M(dst, src)
+        self(dst, src)
         dst @= gpt.gamma[5] * dst
+
+    def propagator(self, solver):
+        exp = self.ExportPhysicalFermionSolution
+        imp = self.ImportPhysicalFermionSource
+
+        inv_matrix = solver(self)
+
+        def prop(dst_sc, src_sc):
+            gpt.eval(dst_sc, exp * inv_matrix * imp * src_sc)
+
+        return gpt.matrix_operator(
+            prop,
+            otype=(exp.otype[0], imp.otype[1]),
+            grid=(exp.grid[0], imp.grid[1]),
+            accept_list=True,
+        )

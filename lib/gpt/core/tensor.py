@@ -85,24 +85,25 @@ class tensor:
 
     def __mul__(self, other):
         if type(other) == gpt.tensor:
-            assert other.otype.__name__ in self.otype.mtab
-            mt = self.otype.mtab[other.otype.__name__]
+            tag = other.otype.__name__
+            assert tag in self.otype.mtab
+            mt = self.otype.mtab[tag]
             return tensor(np.tensordot(self.array, other.array, axes=mt[1]), mt[0]())
         elif type(other) == complex:
             return tensor(self.array * other, self.otype)
         elif type(other) == gpt.expr and other.is_single(gpt.tensor):
             ue, uf, to = other.get_single()
             if ue == 0 and uf & gpt.factor_unary.BIT_TRANS != 0:
-                tag = (self.otype, to.otype)
-                assert tag in gpt.otype.otab
-                mt = gpt.otype.otab[tag]()
+                tag = to.otype.__name__
+                assert tag in self.otype.otab
+                mt = self.otype.otab[tag]
                 rhs = to.array
                 if uf & gpt.factor_unary.BIT_CONJ != 0:
                     rhs = rhs.conj()
                 x = np.multiply.outer(self.array, rhs)
                 for swp in mt[1]:
                     x = np.swapaxes(x, swp[0], swp[1])
-                return tensor(x, mt[0])
+                return tensor(x, mt[0]())
             assert 0
         else:
             return other.__rmul__(self)
@@ -122,6 +123,9 @@ class tensor:
 
     def __eq__(self, other):
         return np.array_equal(self.array, other.array)
+
+    def __neg__(self):
+        return tensor(-self.array, self.otype)
 
     def __sub__(self, other):
         assert self.otype.__name__ == other.otype.__name__

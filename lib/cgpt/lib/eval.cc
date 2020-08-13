@@ -44,7 +44,7 @@ struct _eval_term_ {
   std::vector<_eval_factor_> factors;
 };
 
-void eval_convert_factors(PyObject* _list, std::vector<_eval_term_>& terms) {
+void eval_convert_factors(PyObject* _list, std::vector<_eval_term_>& terms, int idx) {
   ASSERT(PyList_Check(_list));
   int n = (int)PyList_Size(_list);
 
@@ -68,6 +68,12 @@ void eval_convert_factors(PyObject* _list, std::vector<_eval_term_>& terms) {
 
       factor.unary = PyLong_AsLong(PyTuple_GetItem(jj,0));
       PyObject* f = PyTuple_GetItem(jj,1);
+      if (PyList_Check(f)) {
+	ASSERT(idx >= 0 && idx < PyList_Size(f));
+	f = PyList_GetItem(f, idx);
+      } else {
+	ASSERT(idx == 0);
+      }
       if (PyObject_HasAttrString(f,"v_obj")) {
 	PyObject* v_obj = PyObject_GetAttrString(f,"v_obj");
 	ASSERT(v_obj);
@@ -214,8 +220,23 @@ void eval_general(std::vector<cgpt_Lattice_base*>& dst, std::vector<_eval_term_>
       if (dst.size() == 0)
 	dst.resize(a.size(),0);
       ASSERT(dst.size() == a.size());
-      for (int l=0;l<(int)a.size();l++) {
-	dst[l] = a[l][0].get_lat()->compatible_linear_combination(dst[l],ac, a[l], j, unary);
+
+      bool mtrans = (j & BIT_TRANS) != 0;
+      int singlet_rank = a[0][0].get_lat()->singlet_rank();
+      int singlet_dim  = size_to_singlet_dim(singlet_rank, (int)a.size());
+
+      if (singlet_rank == 2) {
+	for (int r=0;r<singlet_dim;r++) {
+	  for (int s=0;s<singlet_dim;s++) {
+	    int idx1 = r*singlet_dim + s;
+	    int idx2 = mtrans ? (s*singlet_dim + r) : idx1;
+	    dst[idx1] = a[idx2][0].get_lat()->compatible_linear_combination(dst[idx1],ac, a[idx2], j, unary);
+	  }
+	}
+      } else {
+	for (int l=0;l<(int)a.size();l++) {
+	  dst[l] = a[l][0].get_lat()->compatible_linear_combination(dst[l],ac, a[l], j, unary);
+	}
       }
       ac=true;
     }
@@ -261,8 +282,8 @@ static void simplify(std::vector<_eval_term_>& terms) {
 EXPORT(eval,{
 
     PyObject*_dst, * _list,* _ac;
-    int unary;
-    if (!PyArg_ParseTuple(args, "OOiO", &_dst, &_list, &unary, &_ac)) {
+    int unary, idx;
+    if (!PyArg_ParseTuple(args, "OOiOi", &_dst, &_list, &unary, &_ac, &idx)) {
       return NULL;
     }
     
@@ -273,7 +294,7 @@ EXPORT(eval,{
     bool new_lattice = (Py_None == _dst);
 
     std::vector<_eval_term_> terms;
-    eval_convert_factors(_list,terms);
+    eval_convert_factors(_list,terms,idx);
     
     std::vector<cgpt_Lattice_base*> dst;
     if (!new_lattice)
