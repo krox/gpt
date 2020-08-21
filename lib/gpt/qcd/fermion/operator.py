@@ -79,6 +79,12 @@ class operator(gpt.matrix_operator):
         super().__init__(
             mat=registry.M, adj_mat=registry.Mdag, otype=otype, grid=self.F_grid
         )
+        self.M = gpt.matrix_operator(
+            mat=registry.M,
+            adj_mat=registry.Mdag,
+            otype=otype,
+            grid=self.F_grid
+        )
         self.Meooe = gpt.matrix_operator(
             mat=registry.Meooe,
             adj_mat=registry.MeooeDag,
@@ -162,6 +168,14 @@ class operator(gpt.matrix_operator):
         assert len(o.v_obj) == 1
         # Grid has different calling conventions which we adopt in cgpt:
         return cgpt.apply_fermion_operator(self.obj, opcode, i.v_obj[0], o.v_obj[0])
+
+    def apply_fermion_deriv(self, force, X, Y, dag):
+        assert type(force) == list and len(force) == 4
+        for f in force:
+            assert len(f.v_obj) == 1
+        assert len(X.v_obj) == 1
+        assert len(Y.v_obj) == 1
+        return cgpt.apply_fermion_deriv(self.obj, [f.v_obj[0] for f in force], X.v_obj[0], Y.v_obj[0], dag)
 
     def _G5M(self, dst, src):
         self(dst, src)
