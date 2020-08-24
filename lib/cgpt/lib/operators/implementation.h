@@ -20,6 +20,7 @@ template<typename T>
 class cgpt_fermion_operator : public cgpt_fermion_operator_base {
 public:
   T* op;
+  typedef typename T::GaugeField GaugeField;
 
   cgpt_fermion_operator(T* _op) : op(_op) {
   }
@@ -43,6 +44,17 @@ public:
     op->MDeriv(tmp, compatible<vobj_ferm>(X)->l, compatible<vobj_ferm>(Y)->l, dag);
     for(int mu = 0; mu < 4; ++mu)
         compatible<vobj_gauge>(force[mu])->l = peekLorentz(tmp, mu);
+  }
+
+  virtual void update(PyObject* args) {
+    GaugeField U(op->GaugeGrid());
+    typedef typename GaugeField::vector_type vCoeff_t;
+    for (int mu=0;mu<Nd;mu++) {
+      auto l = get_pointer<cgpt_Lattice_base>(args,"U",mu);
+      auto& Umu = compatible<iColourMatrix<vCoeff_t>>(l)->l;
+      PokeIndex<LorentzIndex>(U,Umu,mu);
+    }
+    op->ImportGauge(U);
   }
 
 };

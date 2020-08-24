@@ -21,4 +21,5 @@ public:
   virtual ~cgpt_fermion_operator_base() { };
   virtual RealD unary(int opcode, cgpt_Lattice_base* in, cgpt_Lattice_base* out) = 0;
   virtual void deriv(std::array<cgpt_Lattice_base*,4> force, cgpt_Lattice_base* X, cgpt_Lattice_base* Y, int dag) = 0;
+  virtual void update(PyObject* args) = 0;
 };
