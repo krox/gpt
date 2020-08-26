@@ -86,3 +86,62 @@ class cg(base_iterative):
             grid=grid,
             cb=cb,
         )
+
+
+class preconditioned_cg:
+    @g.params_convention(eps=1e-15, maxiter=1000000)
+    def __init__(self, params):
+        self.params = params
+        self.eps = params["eps"]
+        self.maxiter = params["maxiter"]
+        self.history = None
+
+    def __call__(self, mat, approx_inv_mat):
+
+        otype, grid, cb = None, None, None
+
+        # remove wrapper for performance benefits
+        if type(mat) == g.matrix_operator:
+            otype, grid, cb = mat.otype, mat.grid, mat.cb
+            mat = mat.mat
+        if type(approx_inv_mat) == g.matrix_operator:
+            approx_inv_mat = approx_inv_mat.mat
+
+        def inv(psi, src):
+            assert src != psi
+            self.history = []
+            verbose = g.default.is_verbose("cg")
+            t0 = g.time()
+            p, mmp, r, z = g.copy(src), g.copy(src), g.copy(src), g.copy(src)
+            mat(mmp, psi) # mmp = A psi
+            d = g.inner_product(psi, mmp).real # d = psi^dag A psi
+            b = g.norm2(mmp) # b = |A psi|^2
+            r @= src - mmp # r = src - A psi
+            approx_inv_mat(z, r)
+            p @= z # p = r = src - A psi
+            cp = g.inner_product(r, z)
+            ssq = g.norm2(src)
+            rsq = self.eps ** 2.0 * ssq
+            for k in range(1, self.maxiter + 1):
+                c = cp
+                mat(mmp, p)
+                d = g.inner_product(p, mmp).real # d = p A p
+                a = c / d # c / pAp ("alpha")
+                norm_r = g.axpy_norm2(r, -a, mmp, r)# r -= a * Ap
+                approx_inv_mat(z, r)
+                cp = g.inner_product(r, z).real # is this always real?
+                b = cp / c
+                psi += a * p
+                p @= b * p + z
+                self.history.append(cp)
+                if verbose:
+                    g.message("res^2[ %d ] = %g" % (k, norm_r))
+                if norm_r <= rsq:
+                    if verbose:
+                        t1 = g.time()
+                        g.message("Converged in %g s" % (t1 - t0))
+                    break
+
+        return g.matrix_operator(
+            mat=inv, inv_mat=mat, otype=otype, zero=(True, False), grid=grid, cb=cb
+        )

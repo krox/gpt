@@ -20,7 +20,7 @@
 from gpt.algorithms.inverter.sequence import sequence
 from gpt.algorithms.inverter.deflate import deflate
 from gpt.algorithms.inverter.coarse_deflate import coarse_deflate
-from gpt.algorithms.inverter.cg import cg
+from gpt.algorithms.inverter.cg import cg, preconditioned_cg
 from gpt.algorithms.inverter.bicgstab import bicgstab
 from gpt.algorithms.inverter.fgcr import fgcr
 from gpt.algorithms.inverter.fgmres import fgmres
