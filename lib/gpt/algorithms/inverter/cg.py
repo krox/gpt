@@ -111,35 +111,46 @@ class preconditioned_cg:
             assert src != psi
             self.history = []
             verbose = g.default.is_verbose("cg")
-            t0 = g.time()
+            t = g.timer("cg")
+            t("setup")
             p, mmp, r, z = g.copy(src), g.copy(src), g.copy(src), g.copy(src)
-            mat(mmp, psi) # mmp = A psi
-            d = g.inner_product(psi, mmp).real # d = psi^dag A psi
-            b = g.norm2(mmp) # b = |A psi|^2
-            r @= src - mmp # r = src - A psi
+            mat(mmp, psi)
+            d = g.inner_product(psi, mmp).real
+            b = g.norm2(mmp)
+            r @= src - mmp
             approx_inv_mat(z, r)
-            p @= z # p = r = src - A psi
+            p @= z
             cp = g.inner_product(r, z)
             ssq = g.norm2(src)
             rsq = self.eps ** 2.0 * ssq
             for k in range(1, self.maxiter + 1):
                 c = cp
+                t("mat")
                 mat(mmp, p)
-                d = g.inner_product(p, mmp).real # d = p A p
-                a = c / d # c / pAp ("alpha")
-                norm_r = g.axpy_norm2(r, -a, mmp, r)# r -= a * Ap
+                t("inner")
+                d = g.inner_product(p, mmp).real
+                a = c / d
+                norm_r = g.axpy_norm2(r, -a, mmp, r)
+                t("precon")
                 approx_inv_mat(z, r)
-                cp = g.inner_product(r, z).real # is this always real?
+                t("axpy_norm")
+                cp = g.inner_product(r, z).real
+                t("linearcomb")
                 b = cp / c
                 psi += a * p
                 p @= b * p + z
+                t("other")
                 self.history.append(cp)
                 if verbose:
-                    g.message("res^2[ %d ] = %g" % (k, norm_r))
+                    g.message("cg: res^2[ %d ] = %g, target = %g" % (k, norm_r, rsq))
                 if norm_r <= rsq:
                     if verbose:
-                        t1 = g.time()
-                        g.message("Converged in %g s" % (t1 - t0))
+                        t()
+                        g.message(
+                            "cg: converged in %d iterations, took %g s"
+                            % (k, t.dt["total"])
+                        )
+                        g.message(t)
                     break
 
         return g.matrix_operator(
